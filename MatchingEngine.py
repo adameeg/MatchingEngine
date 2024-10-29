@@ -69,10 +69,9 @@ class MatchingEngine:
                 price = limit_order.price # define o preço da negociaçao
                 
                 trade_qty = min(market_order.qty, limit_order.qty)
-                total_qty_traded += trade_qty
-                
                 market_order.qty -= trade_qty
                 limit_order.qty -= trade_qty
+                total_qty_traded += trade_qty
                 
             if limit_order.qty == 0:
                 limit_orders.popleft() # remove a ordem preenchida
@@ -115,10 +114,13 @@ class MatchingEngine:
             print(f"order modified: {order_id}")
             
             if modified_order.side == "buy":
-                self.buy_orders.append(modified_order)
+                self.match_order(modified_order, self.sell_orders)
+                if modified_order.qty > 0:
+                    self.buy_orders.append(modified_order)
             else:
-                self.sell_orders.append(modified_order)
-                
+                self.match_order(modified_order, self.buy_orders)
+            
+                   
             self.sort_orders()
             self.update_pegged_orders()
         else: 
