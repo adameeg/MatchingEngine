@@ -119,7 +119,8 @@ class MatchingEngine:
                     self.buy_orders.append(modified_order)
             else:
                 self.match_order(modified_order, self.buy_orders)
-            
+                if modified_order.qty > 0: 
+                    self.sell_orders.append(modified_order)
                    
             self.sort_orders()
             self.update_pegged_orders()
