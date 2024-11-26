@@ -60,18 +60,20 @@ class MatchingEngine:
         while market_order.qty > 0 and limit_orders:
             limit_order = limit_orders[0]
             
-            if (market_order.side == "buy" and market_order.price < limit_order.price) or \
-                (market_order.side == "sell" and market_order.price > limit_order.price):
-                    print("Preço incompatível") # preço incompativel
+            if market_order.type == "limit":
+                if (market_order.side == "buy" and market_order.price < limit_order.price) or \
+                    (market_order.side == "sell" and market_order.price > limit_order.price):
+                    print("Preço incompatível")  # preço incompatível para ordens limitadas
                     return
+            
+                
+            trade_qty = min(market_order.qty, limit_order.qty)
+            market_order.qty -= trade_qty
+            limit_order.qty -= trade_qty
+            total_qty_traded += trade_qty
             
             if price is None:
                 price = limit_order.price # define o preço da negociaçao
-                
-                trade_qty = min(market_order.qty, limit_order.qty)
-                market_order.qty -= trade_qty
-                limit_order.qty -= trade_qty
-                total_qty_traded += trade_qty
                 
             if limit_order.qty == 0:
                 limit_orders.popleft() # remove a ordem preenchida
@@ -90,6 +92,7 @@ class MatchingEngine:
                 if order.id == order_id:
                     orders.remove(order)
                     print("order cancelled")
+                    self.update_pegged_orders()
                     return  # Sai imediatamente após encontrar e remover a ordem
         print("order not found")
 
@@ -133,18 +136,25 @@ class MatchingEngine:
     
     # Função que atualiza o preço das ordens pegged     
     def update_pegged_orders(self): 
+        
+        for order in self.pegged_orders:
+            if order in self.buy_orders:
+                self.buy_orders.remove(order)
+            if order in self.sell_orders:
+                self.sell_orders.remove(order)
+                
         best_bid = self.buy_orders[0].price if self.buy_orders else None
         best_offer = self.sell_orders[0].price if self.sell_orders else None
+        
+        
         
         for order in self.pegged_orders:
             if order.pegged_to == "bid" and best_bid is not None:
                 order.price = best_bid
-                if order not in self.buy_orders:
-                    self.buy_orders.append(order)
+                self.buy_orders.append(order)
             elif order.pegged_to == "offer" and best_offer is not None:
                 order.price = best_offer
-                if order not in self.sell_orders:
-                    self.sell_orders.append(order)
+                self.sell_orders.append(order)
                     
         self.sort_orders()
      # Exibe o book de ofertas   
